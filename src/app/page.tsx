@@ -1,95 +1,81 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
+import { useState } from 'react';
+import NewTaskForm from '../../components/NewTaskForm';
+import TaskList from '../../components/TaskList';
+import LoginForm from '../../components/LoginForm';
+
+interface Task {
+  task: string;
+  completed: boolean;
+  date: Date | null;
+  priority: 'low' | 'medium' | 'high';
+}
+
+export default function HomePage() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [user, setUser] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+
+  const handleAddTask = (task: string, date: Date | null, priority: 'low' | 'medium' | 'high') => {
+    setTasks([...tasks, { task, completed: false, date, priority }]);
+  };
+
+  const handleCompleteTask = (index: number) => {
+    const newTasks = [...tasks];
+    newTasks[index].completed = !newTasks[index].completed;
+    setTasks(newTasks);
+  };
+
+  const handleDeleteTask = (index: number) => {
+    const newTasks = tasks.filter((_, i) => i !== index);
+    setTasks(newTasks);
+  };
+
+  
+  const sortedTasks = tasks.sort((a, b) => {
+    const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+    return priorityOrder[b.priority] - priorityOrder[a.priority];
+  });
+
+  
+  const filteredTasks = sortedTasks.filter(task => {
+    if (filter === 'completed' && !task.completed) return false;
+    if (filter === 'incomplete' && task.completed) return false;
+    if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+    return true;
+  });
+
+  if (!user) {
+    return <LoginForm onLogin={setUser} />;
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="container">
+      <h1>Welcome, {user}</h1>
+      <NewTaskForm onAddTask={handleAddTask} />
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+     
+      <div className="filter-buttons">
+        <button onClick={() => setFilter('all')}>All Tasks</button>
+        <button onClick={() => setFilter('completed')}>Completed Tasks</button>
+        <button onClick={() => setFilter('incomplete')}>Incomplete Tasks</button>
+      </div>
+
+      
+      <div className="filter-priority-buttons">
+        <button onClick={() => setPriorityFilter('all')}>All Priorities</button>
+        <button onClick={() => setPriorityFilter('high')}>High Priority</button>
+        <button onClick={() => setPriorityFilter('medium')}>Medium Priority</button>
+        <button onClick={() => setPriorityFilter('low')}>Low Priority</button>
+      </div>
+
+      <TaskList
+        tasks={filteredTasks}
+        onComplete={handleCompleteTask}
+        onDelete={handleDeleteTask}
+      />
     </div>
   );
 }
